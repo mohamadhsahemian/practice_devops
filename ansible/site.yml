@@ -1,0 +1,43 @@
+
+---
+- name: Configure local Nginx website
+  hosts: local
+  gather_facts: false
+
+  tasks:
+    - name: Create website page
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../site/index.html"
+        mode: "0644"
+        content: |
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Infrastructure as Code Lab</title>
+          </head>
+          <body>
+            <h1>Infrastructure as Code is working!</h1>
+            <p>Container provisioned with Terraform.</p>
+            <p>Website configured with Ansible.</p>
+          </body>
+          </html>
+
+    - name: Verify website response
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080
+        method: GET
+        status_code: 200
+        return_content: true
+      register: website_response
+      retries: 10
+      delay: 2
+      until: website_response.status == 200
+
+    - name: Verify expected page content
+      ansible.builtin.assert:
+        that:
+          - "'Infrastructure as Code is working!' in website_response.content"
+        fail_msg: "Expected website content was not found."
+        success_msg: "Website content verified successfully."
